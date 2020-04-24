@@ -12,6 +12,7 @@ from path import MODEL_PATH, DATA_PATH
 import pandas as pd
 import numpy as np
 from data_helper import load_dict, load_labeldict, get_batches, read_data, get_val_batch
+from keras import Input, Model
 
 
 '''
@@ -59,30 +60,15 @@ class Main(FlyAI):
         print('=*=数据处理完成=*=')
 
     def train(self):
-        rnn_unit_1 = 128    # RNN层包含cell个数
-        embed_dim = 64      # 嵌入层大小
-        class_num = len(self.label2id)
-        num_word = len(self.text2id)
+
+        max_features = len(self.text2id)
+        maxlen = 68  # 最大句长
         batch_size = args.BATCH
-        MAX_SQUES_LEN = 68  # 最大句长
+        embedding_dims = 64      # 嵌入层大小
+        class_num = len(self.label2id)
 
-        text_input = Input(shape=(MAX_SQUES_LEN,), dtype='int32')
-        embedden_seq = Embedding(input_dim=num_word, output_dim=embed_dim, input_length=MAX_SQUES_LEN)(text_input)
-        BN1 = BatchNormalization()(embedden_seq)
-        bGRU1 = Bidirectional(GRU(rnn_unit_1, activation='selu', return_sequences=True,
-                                  implementation=1), merge_mode='concat')(BN1)
-        bGRU2 = Bidirectional(GRU(rnn_unit_1, activation='selu', return_sequences=True,
-                                  implementation=1), merge_mode='concat')(bGRU1)
-
-        drop = Dropout(0.5)(bGRU2)
-        avgP = GlobalAveragePooling1D()(drop)
-        maxP = GlobalMaxPooling1D()(drop)
-
-        conc = concatenate([avgP, maxP])
-
-        pred = Dense(class_num, activation='softmax')(conc)
-        k_model = keras.Model(text_input, pred)
-        k_model.compile(optimizer=RMSprop(lr=0.0005), loss='categorical_crossentropy', metrics=['acc'])
+        k_model = TextCNN(maxlen, max_features, embedding_dims, class_num, last_activation='softmax').get_model()
+        k_model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
 
         batch_nums = int(len(self.train_data)/batch_size)
         best_score = 0
@@ -106,6 +92,31 @@ class Main(FlyAI):
                         k_model.save(os.path.join(MODEL_PATH, 'model.h5'))
                     print('best acc:', best_score)
 
+class TextCNN(object):
+    def __init__(self, maxlen, max_features, embedding_dims,
+                 class_num=1,
+                 last_activation='sigmoid'):
+        self.maxlen = maxlen
+        self.max_features = max_features
+        self.embedding_dims = embedding_dims
+        self.class_num = class_num
+        self.last_activation = last_activation
+
+    def get_model(self):
+        input = Input((self.maxlen,))
+
+        # Embedding part can try multichannel as same as origin paper
+        embedding = Embedding(self.max_features, self.embedding_dims, input_length=self.maxlen)(input)
+        convs = []
+        for kernel_size in [3, 4, 5]:
+            c = Conv1D(128, kernel_size, activation='relu')(embedding)
+            c = GlobalMaxPooling1D()(c)
+            convs.append(c)
+        x = Concatenate()(convs)
+
+        output = Dense(self.class_num, activation=self.last_activation)(x)
+        model = Model(inputs=input, outputs=output)
+        return model
 
 if __name__ == '__main__':
     main = Main()

@@ -8,12 +8,14 @@ from keras.optimizers import RMSprop
 from sklearn.model_selection import train_test_split
 from flyai.framework import FlyAI
 from flyai.data_helper import DataHelper
-from path import MODEL_PATH, DATA_PATH
+from path import MODEL_PATH, DATA_PATH,FASTTEXT_TRAIN_DATA_PATH,FASTTEXT_TEST_DATA_PATH,FASTTEXT_MODEL_PATH,FASTTEXT_PRETRAIN_VEC_PATH
 import pandas as pd
 import numpy as np
-from data_helper import load_dict, load_labeldict, get_batches, read_data, get_val_batch
+from data_helper import load_dict, load_labeldict, get_batches, read_data, get_val_batch,covert2fasttext
 from keras import Input, Model
-
+import fasttext
+from prediction import Prediction
+from flyai.utils import remote_helper
 
 '''
 此项目为FlyAI2.0新版本框架，数据读取，评估方式与之前不同
@@ -35,6 +37,7 @@ args = parser.parse_args()
 
 
 class Main(FlyAI):
+
     '''
     项目中必须继承FlyAI类，否则线上运行会报错。
     '''
@@ -51,77 +54,36 @@ class Main(FlyAI):
         '''
         # 加载数据
         self.data = pd.read_csv(os.path.join(DATA_PATH, 'MedicalClass/train.csv'))
-        # 划分训练集、测试集
-        self.train_data, self.valid_data = train_test_split(self.data, test_size=0.01, random_state=6, shuffle=True)
-        self.text2id, _ = load_dict(os.path.join(DATA_PATH, 'MedicalClass/words_fr.dict'))
-        self.label2id, _ = load_labeldict(os.path.join(DATA_PATH, 'MedicalClass/label.dict'))
-        self.train_text, self.train_label = read_data(self.train_data, self.text2id, self.label2id)
-        self.val_text, self.val_label = read_data(self.valid_data, self.text2id, self.label2id)
+        #self.train_data, self.valid_data = train_test_split(self.data, test_size=0.1, random_state=6, shuffle=True)
+        #转换为fasttext 数据格式, label以"__label__"开头,如__label__equipment, 空格分开label和text
+        #covert2fasttext(self.train_data,FASTTEXT_TRAIN_DATA_PATH)
+        #covert2fasttext(self.valid_data, FASTTEXT_TEST_DATA_PATH)
+        if not os.path.exists(FASTTEXT_TRAIN_DATA_PATH):
+            covert2fasttext(self.data, FASTTEXT_TRAIN_DATA_PATH)
         print('=*=数据处理完成=*=')
 
     def train(self):
+        # 必须使用该方法下载模型，然后加载
+        #if not os.path.isfile(FASTTEXT_PRETRAIN_VEC_PATH):
+        #   remote_helper.get_remote_date('https://www.flyai.com/m/cc.zh.300.vec')
 
-        max_features = len(self.text2id)
-        maxlen = 68  # 最大句长
-        batch_size = args.BATCH
-        embedding_dims = 64      # 嵌入层大小
-        class_num = len(self.label2id)
+        #model = fasttext.train_supervised(epoch=1,ws=3,dim=300,minn=1,maxn=5,minCount=1,wordNgrams=5,input=FASTTEXT_TRAIN_DATA_PATH,pretrainedVectors=FASTTEXT_PRETRAIN_VEC_PATH)
+        #model = fasttext.train_supervised(epoch=25,dim=300,input=FASTTEXT_TRAIN_DATA_PATH, pretrainedVectors=FASTTEXT_PRETRAIN_VEC_PATH)
+        model = fasttext.train_supervised(epoch=30, wordNgrams=3, lr=0.5, dim=300, input=FASTTEXT_TRAIN_DATA_PATH)
+        model.save_model(FASTTEXT_MODEL_PATH)
 
-        k_model = TextCNN(maxlen, max_features, embedding_dims, class_num, last_activation='softmax').get_model()
-        k_model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
-
-        batch_nums = int(len(self.train_data)/batch_size)
-        best_score = 0
-        for epoch in range(args.EPOCHS):
-            for batch_i, (x_train, y_train) in \
-                    enumerate(get_batches(self.train_text, self.train_label,
-                                          batch_size=batch_size, text_padding=self.text2id['_pad_'])):
-
-                history = k_model.fit(np.array(x_train), np.array(y_train), batch_size=batch_size, verbose=0)
-                CurEpoch = str(epoch+1) + "/" + str(args.EPOCHS)
-                CurBatch = str(batch_i+1) + "/" + str(batch_nums)
-                print('CurEpoch: {} | CurBatch: {}| ACC: {}'.format(CurEpoch, CurBatch, history.history['acc'][0]))
-
-                x_val, y_val = get_val_batch(self.val_text, self.val_label,
-                                             batch_size=1024, text_padding=self.text2id['_pad_'])
-                if batch_i % 100 == 0:
-                    score = k_model.evaluate(np.array(x_val), np.array(y_val), batch_size=1024)
-                    acc = score[1]
-                    if acc > best_score:
-                        best_score = acc
-                        k_model.save(os.path.join(MODEL_PATH, 'model.h5'))
-                    print('best acc:', best_score)
-
-class TextCNN(object):
-    def __init__(self, maxlen, max_features, embedding_dims,
-                 class_num=1,
-                 last_activation='sigmoid'):
-        self.maxlen = maxlen
-        self.max_features = max_features
-        self.embedding_dims = embedding_dims
-        self.class_num = class_num
-        self.last_activation = last_activation
-
-    def get_model(self):
-        input = Input((self.maxlen,))
-
-        # Embedding part can try multichannel as same as origin paper
-        embedding = Embedding(self.max_features, self.embedding_dims, input_length=self.maxlen)(input)
-        convs = []
-        for kernel_size in [3, 4, 5]:
-            c = Conv1D(128, kernel_size, activation='relu')(embedding)
-            c = GlobalMaxPooling1D()(c)
-            convs.append(c)
-        x = Concatenate()(convs)
-
-        output = Dense(self.class_num, activation=self.last_activation)(x)
-        model = Model(inputs=input, outputs=output)
-        return model
 
 if __name__ == '__main__':
     main = Main()
     main.download_data()
     main.deal_with_data()
     main.train()
+
+    #pred = Prediction()
+    #pred.load_model()
+    #accu = pred.predict_file(FASTTEXT_TEST_DATA_PATH)
+    #print("accu is{}".format(accu))
+    # print(label)
+    #pred.predict_3("癫痫犯病有什么现象", "朋友在三岁那年被确诊患有癫痫,这些年一直都在治疗,这几天姑姑姑父要出门办点事,就让我们家帮忙照顾表弟几天,我们从来都没有照顾过癫痫病人。")
 
     exit(0)

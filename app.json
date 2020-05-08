@@ -1,4 +1,5 @@
 {
+  "author":"land_ouyang", 
   "data":{
     "source":[
       {
@@ -8,45 +9,44 @@
       }
     ]
   }, 
-  "name":"医疗文本分类", 
-  "author":"land_ouyang", 
-  "project":{
-    "prediction":{
-      "file":"prediction.py"
-    }, 
-    "framework":"Keras", 
-    "train":{
-      "file":"main.py"
-    }, 
-    "language":"Python3", 
-    "id":"MedicalClass", 
-    "algorithm":"LSTM"
-  }, 
+  "description":"医疗文本分类", 
   "topic":"文本分类,分类算法", 
+  "name":"医疗文本分类", 
   "model":{
-    "output":{
-      "columns":[
-        {
-          "name":"label", 
-          "type":"string", 
-          "sample":"文本"
-        }
-      ]
-    }, 
     "input":{
       "columns":[
         {
           "name":"title", 
-          "type":"string", 
-          "sample":"文本"
+          "sample":"文本", 
+          "type":"string"
         }, 
         {
           "name":"text", 
-          "type":"string", 
-          "sample":"文本"
+          "sample":"文本", 
+          "type":"string"
+        }
+      ]
+    }, 
+    "output":{
+      "columns":[
+        {
+          "name":"label", 
+          "sample":"文本", 
+          "type":"string"
         }
       ]
     }
   }, 
-  "description":"医疗文本分类"
+  "project":{
+    "id":"MedicalClass", 
+    "algorithm":"LSTM", 
+    "language":"Python3", 
+    "framework":"Keras", 
+    "train":{
+      "file":"main.py"
+    }, 
+    "prediction":{
+      "file":"prediction.py"
+    }
+  }
 }

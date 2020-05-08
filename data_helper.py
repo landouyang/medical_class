@@ -5,7 +5,7 @@ import os
 import json
 import jieba
 import numpy as np
-
+from strip_stop import  process
 
 def load_dict(dictFile):
     if not os.path.exists(dictFile):
@@ -98,6 +98,37 @@ def get_val_batch(texts, labels, batch_size, text_padding):
     pad_texts_batch = batch_padding(texts_batch, text_padding)
     return pad_texts_batch, labels_batch
 
+def covert2fasttext(input_data_frame, save_path):
+    data_list = []
+    label_stat = {}
+    rows_len = len(input_data_frame)
+    for ind, row in input_data_frame.iterrows():
+        # if ind >999:
+        #     break
+        if (ind % 10000 == 0):
+            print("coverting {} of {}".format(ind, rows_len))
+        text_line = row['title'].replace(" ","") + "," + row['text'].replace(" ","")
+        text_line = text_line.replace("\r\n", "")
+        text_line = text_line.replace("\r", "")
+        text_line = text_line.replace("\n", "")
+        # # text_line = re.sub('"', '', text_line)
+        # # text_line = re.sub('”', '', text_line)
+
+        tokens = process(text_line)
+        new_label = "__label__"+row['label']
+
+        count = label_stat.get(row['label'])
+        if count:
+            count = int(count)+1
+            label_stat[row['label']] = count
+        else:
+            label_stat[row['label']] = 1
+        data_list.append(new_label + " " + text_line+"\n")
+
+    print(sorted(label_stat.items(), key=lambda d: d[1], reverse=True))
+    with open(save_path, 'w', encoding='UTF-8') as df:
+        dictF = df.writelines(data_list)
+    print("Save train data to FastText format successfully!")
 
 if __name__ == "__main__":
     from prediction import Prediction
@@ -105,7 +136,7 @@ if __name__ == "__main__":
     model = Prediction()
     model.load_model()
 
-    result = model.predict(title='甲状腺功能减退能治好吗？', text='无')
+    result = model.predict(title='甲状腺功能减退能治好吗？', text='')
     print(result)
 
     exit(0)

@@ -108,8 +108,8 @@ def covert2fasttext(input_data_frame, save_path):
         if (ind % 10000 == 0):
             print("coverting {} of {}".format(ind, rows_len))
         text_line = row['title'].replace(" ","") + "," + row['text'].replace(" ","")
-        text_line = text_line.replace("\r\n", "")
-        text_line = text_line.replace("\r", "")
+        #text_line = text_line.replace("\r\n", "")
+        #text_line = text_line.replace("\r", "")
         text_line = text_line.replace("\n", "")
         # # text_line = re.sub('"', '', text_line)
         # # text_line = re.sub('”', '', text_line)
@@ -123,7 +123,7 @@ def covert2fasttext(input_data_frame, save_path):
             label_stat[row['label']] = count
         else:
             label_stat[row['label']] = 1
-        data_list.append(new_label + " " + text_line+"\n")
+        data_list.append(new_label + " " + tokens+"\n")
 
     print(sorted(label_stat.items(), key=lambda d: d[1], reverse=True))
     with open(save_path, 'w', encoding='UTF-8') as df:

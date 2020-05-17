@@ -12,7 +12,7 @@ def clean_txt(raw):
 def seg(sentence, sw, apply=None):
     if isinstance(apply, FunctionType) or isinstance(apply, MethodType):
         sentence = apply(sentence)
-    return ' '.join([i for i in jieba.cut(sentence) if i.strip() and i not in sw])
+    return ' '.join([i for i in jieba.lcut(sentence) if i.strip() and i not in sw])
     #return ' '.join([i for i in sentence if i.strip() and i not in sw])
 
 

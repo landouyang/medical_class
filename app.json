@@ -1,18 +1,26 @@
 {
-  "author":"land_ouyang", 
   "data":{
     "source":[
       {
         "name":"医疗文本分类", 
-        "id":"MedicalClass", 
-        "source":"数据集来源网络"
+        "source":"数据集来源网络", 
+        "id":"MedicalClass"
       }
     ]
   }, 
-  "description":"医疗文本分类", 
-  "topic":"文本分类,分类算法", 
   "name":"医疗文本分类", 
+  "topic":"文本分类,分类算法", 
+  "author":"land_ouyang", 
   "model":{
+    "output":{
+      "columns":[
+        {
+          "name":"label", 
+          "sample":"文本", 
+          "type":"string"
+        }
+      ]
+    }, 
     "input":{
       "columns":[
         {
@@ -26,27 +34,19 @@
           "type":"string"
         }
       ]
-    }, 
-    "output":{
-      "columns":[
-        {
-          "name":"label", 
-          "sample":"文本", 
-          "type":"string"
-        }
-      ]
     }
   }, 
   "project":{
-    "id":"MedicalClass", 
-    "algorithm":"LSTM", 
-    "language":"Python3", 
-    "framework":"Keras", 
+    "prediction":{
+      "file":"prediction.py"
+    }, 
     "train":{
       "file":"main.py"
     }, 
-    "prediction":{
-      "file":"prediction.py"
-    }
-  }
+    "language":"Python3", 
+    "framework":"Keras", 
+    "id":"MedicalClass", 
+    "algorithm":"LSTM"
+  }, 
+  "description":"医疗文本分类"
 }

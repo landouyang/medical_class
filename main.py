@@ -64,12 +64,12 @@ class Main(FlyAI):
 
     def train(self):
         # 必须使用该方法下载模型，然后加载
-        #if not os.path.isfile(FASTTEXT_PRETRAIN_VEC_PATH):
-        #   remote_helper.get_remote_date('https://www.flyai.com/m/cc.zh.300.vec')
+        if not os.path.isfile(FASTTEXT_PRETRAIN_VEC_PATH):
+           remote_helper.get_remote_date('https://www.flyai.com/m/cc.zh.300.vec')
 
         #model = fasttext.train_supervised(epoch=1,ws=3,dim=300,minn=1,maxn=5,minCount=1,wordNgrams=5,input=FASTTEXT_TRAIN_DATA_PATH,pretrainedVectors=FASTTEXT_PRETRAIN_VEC_PATH)
         #model = fasttext.train_supervised(epoch=25,dim=300,input=FASTTEXT_TRAIN_DATA_PATH, pretrainedVectors=FASTTEXT_PRETRAIN_VEC_PATH)
-        model = fasttext.train_supervised(epoch=30, wordNgrams=3, lr=0.5, dim=300, input=FASTTEXT_TRAIN_DATA_PATH)
+        model = fasttext.train_supervised(epoch=30, wordNgrams=4, ws=5,lr=0.05, dim=300, input=FASTTEXT_TRAIN_DATA_PATH,pretrainedVectors=FASTTEXT_PRETRAIN_VEC_PATH)
         model.save_model(FASTTEXT_MODEL_PATH)
 
 

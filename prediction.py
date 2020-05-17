@@ -82,9 +82,9 @@ class Prediction(FlyAI):
 
 # if __name__ == '__main__':
 #     pred = Prediction()
-#
+
 #     pred.load_model()
-#
+
 #     result = pred.fast_text_test()
 #     print("the test result is {}".format(result))
     # label = pred.predict("癫痫犯病有什么现象","朋友在三岁那年被确诊患有癫痫,这些年一直都在治疗,这几天姑姑姑父要出门办点事,就让我们家帮忙照顾表弟几天,我们从来都没有照顾过癫痫病人。")
